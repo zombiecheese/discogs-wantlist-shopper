@@ -15,6 +15,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+# Install Chromium for headless marketplace page discovery (stage 2 fallback).
+# playwright-core uses this via the CHROMIUM_PATH env var set below.
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 EXPOSE 3000

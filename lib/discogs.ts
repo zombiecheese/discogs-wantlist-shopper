@@ -332,22 +332,27 @@ export async function fetchWantlist(username: string, auth?: DiscogsAuth): Promi
 
 export async function searchMarketplaceByRelease(releaseId: number, auth?: DiscogsAuth): Promise<MarketplaceListing[]> {
   // Stage 1: attempt API-driven listing discovery first.
+  let stage1Error: unknown = null;
   try {
     const listings = await fetchMarketplaceListingsByRelease(releaseId, auth);
     if (listings.length > 0) {
       await delay(600);
       return listings;
     }
-  } catch {
-    // Fall through to stage 2 discovery below.
+    console.log(`[discogs] stage1 release=${releaseId} returned 0 listings, falling to stage2`);
+  } catch (err) {
+    stage1Error = err;
+    console.error(`[discogs] stage1 release=${releaseId} error:`, err);
   }
 
   // Stage 2: discover listing IDs from sell page and hydrate via listing-get.
   const listingIds = await discoverListingIdsByReleaseViaSellPage(releaseId);
   if (listingIds.length === 0) {
+    console.log(`[discogs] stage2 release=${releaseId} browser scrape returned 0 listing IDs${stage1Error ? " (stage1 also failed)" : ""}`);
     await delay(600);
     return [];
   }
+  console.log(`[discogs] stage2 release=${releaseId} discovered ${listingIds.length} listing IDs from sell page`);
 
   const hydrated: MarketplaceListing[] = [];
   for (const listingId of listingIds.slice(0, 80)) {
@@ -418,6 +423,15 @@ async function getDiscoveryBrowser(): Promise<BrowserLike | null> {
     discoveryBrowserPromise = (async () => {
       try {
         const playwright = await import("playwright-core");
+        const executablePath = process.env.CHROMIUM_PATH;
+        if (executablePath) {
+          // Use system Chromium installed in the container (set via CHROMIUM_PATH).
+          return (await playwright.chromium.launch({
+            headless: true,
+            executablePath,
+          })) as unknown as BrowserLike;
+        }
+        // Fall back to msedge on Windows dev machines.
         return (await playwright.chromium.launch({
           headless: true,
           channel: "msedge",

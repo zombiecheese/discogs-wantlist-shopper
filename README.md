@@ -50,6 +50,14 @@ If forwarded headers are missing or incorrect, OAuth callback validation or auth
 
 If you see a callback URL using a container hostname (for example `https://<container-id>:3000/...`), your app is not seeing the public host correctly. In Cloudflare Tunnel, set the public hostname and configure the origin request host header to your public domain.
 
+## Docker and headless browser
+
+The marketplace search uses a two-stage strategy. Stage 1 queries the Discogs API. Stage 2 falls back to a headless browser page scrape when the API returns no listings for a release.
+
+The Docker image installs Chromium at build time and sets `CHROMIUM_PATH` automatically so stage 2 works in the container. No extra configuration is needed.
+
+On a Windows dev machine, stage 2 falls back to Microsoft Edge instead.
+
 ## Run locally
 
 ```bash
