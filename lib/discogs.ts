@@ -418,10 +418,10 @@ async function getDiscoveryBrowser(): Promise<BrowserLike | null> {
     discoveryBrowserPromise = (async () => {
       try {
         const playwright = await import("playwright-core");
-        return await playwright.chromium.launch({
+        return (await playwright.chromium.launch({
           headless: true,
           channel: "msedge",
-        }) as BrowserLike;
+        })) as unknown as BrowserLike;
       } catch {
         return null;
       }
