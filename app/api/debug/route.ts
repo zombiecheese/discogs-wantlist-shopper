@@ -1,7 +1,7 @@
 import { existsSync } from "fs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { fetchIdentity, getDiscogsAuthFromEnvOrThrow, searchMarketplaceByRelease } from "@/lib/discogs";
+import { type DiscogsAuth, fetchIdentity, getDiscogsAuthFromEnvOrThrow, searchMarketplaceByRelease } from "@/lib/discogs";
 
 export const runtime = "nodejs";
 
@@ -28,7 +28,7 @@ async function checkBrowser(): Promise<{ ok: boolean; path: string | null; error
   }
 }
 
-async function checkStage1(auth: { kind: string; token: string; tokenSecret?: string }) {
+async function checkStage1(auth: DiscogsAuth) {
 
   // Hit the same API endpoint the app uses for stage 1.
   const url = new URL("https://api.discogs.com/marketplace/search");
@@ -80,7 +80,7 @@ export async function GET() {
   };
 
   // Auth check
-  let auth: { kind: string; token: string; tokenSecret?: string } | null = null;
+  let auth: DiscogsAuth | null = null;
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("discogs_access_token")?.value;
@@ -122,10 +122,9 @@ export async function GET() {
   }
 
   // Full search probe for the known release (runs both stages, shows what comes back)
-  if (auth && (auth.kind === "token" || (auth.kind === "oauth" && auth.tokenSecret))) {
-    const typedAuth = auth as Parameters<typeof searchMarketplaceByRelease>[1];
+  if (auth) {
     try {
-      const listings = await searchMarketplaceByRelease(PROBE_RELEASE_ID, typedAuth);
+      const listings = await searchMarketplaceByRelease(PROBE_RELEASE_ID, auth);
       result.fullSearchProbe = {
         releaseId: PROBE_RELEASE_ID,
         listingsFound: listings.length,
