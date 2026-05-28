@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRequestToken } from "@/lib/discogs";
+import { getPublicBaseUrl, requestIsHttps } from "@/lib/public-url";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const callbackUrl = new URL("/api/auth/discogs/callback", request.url).toString();
+    const callbackUrl = new URL("/api/auth/discogs/callback", getPublicBaseUrl(request)).toString();
     const { token, tokenSecret } = await createRequestToken(callbackUrl);
     const redirectUrl = new URL("https://www.discogs.com/oauth/authorize");
     redirectUrl.searchParams.set("oauth_token", token);
@@ -14,14 +15,14 @@ export async function GET(request: NextRequest) {
     response.cookies.set("discogs_request_token", token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: request.nextUrl.protocol === "https:",
+      secure: requestIsHttps(request),
       path: "/",
       maxAge: 10 * 60,
     });
     response.cookies.set("discogs_request_token_secret", tokenSecret, {
       httpOnly: true,
       sameSite: "lax",
-      secure: request.nextUrl.protocol === "https:",
+      secure: requestIsHttps(request),
       path: "/",
       maxAge: 10 * 60,
     });

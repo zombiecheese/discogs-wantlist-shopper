@@ -16,6 +16,7 @@ Copy [.env.example](.env.example) to [.env.local](.env.local) and set the values
 - `DISCOGS_CONSUMER_KEY`
 - `DISCOGS_CONSUMER_SECRET`
 - `DISCOGS_USER_AGENT`
+- `APP_PUBLIC_URL` (recommended for reverse proxy/tunnel deployments, for example `https://your-domain.example`)
 - `DISCOGS_PERSONAL_ACCESS_TOKEN` or an OAuth session created through the app
 - `DISCOGS_USERNAME` when using a personal access token
 
@@ -26,6 +27,28 @@ For Discogs OAuth, register the callback URL below in your Discogs application s
 - `http://localhost:3000/api/auth/discogs/callback`
 
 If you run in Docker, use the same variables and keep the callback URL pointed at the host-mapped address you browse in the host browser.
+
+## Reverse proxy and Cloudflare Tunnel
+
+This app can run behind a reverse proxy or Cloudflare Tunnel, including the Discogs OAuth flow, as long as your public origin is forwarded correctly.
+
+Requirements:
+
+- Register your public callback URL in Discogs app settings, for example:
+	- `https://your-domain.example/api/auth/discogs/callback`
+- Ensure your proxy/tunnel forwards the original `Host` header.
+- Ensure your proxy/tunnel forwards `X-Forwarded-Proto: https` when TLS is terminated upstream.
+- Use the same public origin for the full auth flow. Do not start auth on `localhost` and complete it on a public domain (or vice versa).
+- Set `APP_PUBLIC_URL` to your public origin (for example `https://your-domain.example`) to force stable callback and redirect URL generation.
+
+Why this matters:
+
+- The app builds OAuth callback/redirect URLs from the incoming request URL.
+- Cookie security is set based on the detected request protocol.
+
+If forwarded headers are missing or incorrect, OAuth callback validation or auth cookies may fail.
+
+If you see a callback URL using a container hostname (for example `https://<container-id>:3000/...`), your app is not seeing the public host correctly. In Cloudflare Tunnel, set the public hostname and configure the origin request host header to your public domain.
 
 ## Run locally
 

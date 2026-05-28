@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeAccessToken } from "@/lib/discogs";
+import { getPublicBaseUrl, requestIsHttps } from "@/lib/public-url";
 
 export const runtime = "nodejs";
 
@@ -18,19 +19,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { token, tokenSecret } = await exchangeAccessToken(savedToken, savedSecret, verifier);
-    const response = NextResponse.redirect(new URL("/", request.url));
+    const response = NextResponse.redirect(new URL("/", getPublicBaseUrl(request)));
 
     response.cookies.set("discogs_access_token", token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: request.nextUrl.protocol === "https:",
+      secure: requestIsHttps(request),
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     });
     response.cookies.set("discogs_access_secret", tokenSecret, {
       httpOnly: true,
       sameSite: "lax",
-      secure: request.nextUrl.protocol === "https:",
+      secure: requestIsHttps(request),
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     });
